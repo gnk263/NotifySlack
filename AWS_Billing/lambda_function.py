@@ -1,13 +1,15 @@
 import os
 import boto3
+import json
+import requests
 from datetime import datetime
 
 SLACK_WEBHOOK_URL = os.environ["SLACK_WEBHOOK_URL"]
 SLACK_CHANNEL = os.environ["SLACK_CHANNEL"]
 
 def lambda_handler(event, context):
-    # TODO implement
-    return 'Hello from Lambda'
+    message = get_message()
+    post_slack(message)
 
 def get_aws_billing():
     resource = boto3.client("cloudwatch", region_name="us-east-1")
@@ -34,6 +36,24 @@ def get_aws_billing():
     timestamp = response["Datapoints"][0]["Timestamp"].strftime("%Y/%m/%d")
 
     return (billing, timestamp)
+
+def get_message():
+    (billing, timestamp) = get_aws_billing()
+    return f"{timestamp}までの請求金額は ${billing} です。"
+
+def post_slack(message):
+    payload = {
+        "text": message,
+        "channel": SLACK_CHANNEL
+    }
+
+    #http://requests-docs-ja.readthedocs.io/en/latest/user/quickstart/
+    try:
+        response = requests.post(SLACK_WEBHOOK_URL, data=json.dumps(payload))
+    except requests.exceptions.RequestException as e:
+        print(e)
+    else:
+        print(response.status_code)
 
 def get_month_first_datetime():
     today = datetime.today()
