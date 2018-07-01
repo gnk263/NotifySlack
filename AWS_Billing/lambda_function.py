@@ -6,6 +6,7 @@ from datetime import datetime
 
 SLACK_WEBHOOK_URL = os.environ["SLACK_WEBHOOK_URL"]
 SLACK_CHANNEL = os.environ["SLACK_CHANNEL"]
+AWS_ACCOUNT_NAME = os.environ["AWS_ACCOUNT_NAME"]
 
 def lambda_handler(event, context):
     message = get_message()
@@ -39,7 +40,7 @@ def get_aws_billing():
 
 def get_message():
     (billing, timestamp) = get_aws_billing()
-    return f"{timestamp}までの請求金額は ${billing} です。"
+    return f"[{AWS_ACCOUNT_NAME}]\n{timestamp}までの請求金額は ${billing} です。"
 
 def post_slack(message):
     payload = {
