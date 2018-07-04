@@ -2,6 +2,7 @@ import os
 import boto3
 import json
 import requests
+from datetime import timedelta
 from datetime import datetime
 
 SLACK_WEBHOOK_URL = os.environ["SLACK_WEBHOOK_URL"]
@@ -27,7 +28,7 @@ def get_aws_billing():
                 "Value": "USD"
             }
         ],
-        StartTime=get_month_first_datetime(),
+        StartTime=get_yesterday_datetime(),
         EndTime=get_current_datetime(),
         Period=24*60*60,
         Statistics=["Maximum"]
@@ -56,13 +57,12 @@ def post_slack(message):
     else:
         print(response.status_code)
 
-def get_month_first_datetime():
+def get_yesterday_datetime():
     today = datetime.today()
-    year = today.year
-    month = today.month
+    yesterday = today - timedelta(days=1)
 
     #ISO 8601
-    return datetime(year, month, 1, 0, 0, 0).isoformat()
+    return yesterday.isoformat()
 
 def get_current_datetime():
     #ISO 8601
