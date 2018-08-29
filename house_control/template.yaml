@@ -11,7 +11,7 @@ Globals:
 
 Resources:
 
-    HelloWorldFunction:
+    AskAirconFunction:
         Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
         Properties:
             CodeUri: ask_aircon/build/
@@ -21,7 +21,7 @@ Resources:
                 Variables:
                     PARAM1: VALUE
             Events:
-                HelloWorld:
+                Aircon:
                     Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
                     Properties:
                         Path: /hello
@@ -29,14 +29,14 @@ Resources:
 
 Outputs:
 
-    HelloWorldApi:
+    AskAirconApi:
       Description: "API Gateway endpoint URL for Prod stage for Hello World function"
       Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
 
-    HelloWorldFunction:
-      Description: "Hello World Lambda Function ARN"
-      Value: !GetAtt HelloWorldFunction.Arn
+    AskAirconFunction:
+      Description: "Ask aircon Lambda Function ARN"
+      Value: !GetAtt AskAirconFunction.Arn
 
-    HelloWorldFunctionIamRole:
-      Description: "Implicit IAM Role created for Hello World function"
-      Value: !GetAtt HelloWorldFunctionRole.Arn
+    AskAirconFunctionIamRole:
+      Description: "Implicit IAM Role created for AskAirconFunction function"
+      Value: !GetAtt AskAirconFunctionRole.Arn
