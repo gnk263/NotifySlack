@@ -22,10 +22,9 @@ Resources:
                     PARAM1: VALUE
             Events:
                 Aircon:
-                    Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+                    Type: Schedule # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
                     Properties:
-                        Path: /hello
-                        Method: get
+                        Schedule: rate(1 minutes)
 
 Outputs:
     AskAirconFunction:
