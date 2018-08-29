@@ -1,0 +1,36 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'ask_aircon
+
+  '
+Globals:
+  Function:
+    Timeout: 3
+Outputs:
+  AskAirconFunction:
+    Description: Ask aircon Lambda Function ARN
+    Value:
+      Fn::GetAtt:
+      - AskAirconFunction
+      - Arn
+  AskAirconFunctionIamRole:
+    Description: Implicit IAM Role created for AskAirconFunction function
+    Value:
+      Fn::GetAtt:
+      - AskAirconFunctionRole
+      - Arn
+Resources:
+  AskAirconFunction:
+    Properties:
+      CodeUri: s3://gnk263-lambda-bucket/95dd61aed5f8362b7a684bdde399ba64
+      Environment:
+        Variables:
+          PARAM1: VALUE
+      Events:
+        Aircon:
+          Properties:
+            Schedule: rate(1 minutes)
+          Type: Schedule
+      Handler: app.lambda_handler
+      Runtime: python3.6
+    Type: AWS::Serverless::Function
+Transform: AWS::Serverless-2016-10-31
