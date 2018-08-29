@@ -28,11 +28,6 @@ Resources:
                         Method: get
 
 Outputs:
-
-    AskAirconApi:
-      Description: "API Gateway endpoint URL for Prod stage for Hello World function"
-      Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
-
     AskAirconFunction:
       Description: "Ask aircon Lambda Function ARN"
       Value: !GetAtt AskAirconFunction.Arn
