@@ -19,7 +19,7 @@ Resources:
             Runtime: python3.6
             Environment: # More info about Env Vars: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#environment-object
                 Variables:
-                    PARAM1: VALUE
+                    POST_SLACK_URL: VALUE
             Events:
                 Aircon:
                     Type: Schedule # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
