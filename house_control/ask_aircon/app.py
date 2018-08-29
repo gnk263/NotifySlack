@@ -7,4 +7,4 @@ import requests
 def lambda_handler(event, context):
 
     print("hello world")
-    print(os.environ["POST_SLACK_URL"])
+    print(os.environ["SLACK_WEBHOOK_URL"])
