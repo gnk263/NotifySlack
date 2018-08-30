@@ -7,15 +7,32 @@ SLACK_WEBHOOK_URL = os.environ["SLACK_WEBHOOK_URL"]
 SLACK_CHANNEL = os.environ["SLACK_CHANNEL"]
 
 def lambda_handler(event, context):
-
-    print("hello world")
-
-    post_slack("This is test message.")
+    post_slack("エアコンをOnにしますか？")
 
 def post_slack(message):
     payload = {
-        "text": message,
-        "channel": SLACK_CHANNEL
+        "attachments": [
+            {
+                "text": message,
+                "callback_id": "ask_aircon",
+                "color": "#3AA3E3",
+                "attachment_type": "default",
+                "actions": [
+                    {
+                        "name": "aircon",
+                        "text": "Yes",
+                        "type": "button",
+                        "value": "yes"
+                    },
+                    {
+                        "name": "aircon",
+                        "text": "No",
+                        "type": "button",
+                        "value": "no"
+                    }
+                ]
+            }
+        ]
     }
 
     # http://requests-docs-ja.readthedocs.io/en/latest/user/quickstart/
