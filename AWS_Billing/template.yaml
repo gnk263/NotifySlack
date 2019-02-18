@@ -22,17 +22,12 @@ Resources:
                 Variables:
                     PARAM1: VALUE
             Events:
-                HelloWorld:
-                    Type: Api
+                NotifySlack:
+                    Type: Schedule
                     Properties:
-                        Path: /hello
-                        Method: get
+                      Schedule: cron(0 0 * * ? *) # 日本時間AM9時に毎日通知する
 
 Outputs:
-
-    HelloWorldApi:
-      Description: "API Gateway endpoint URL for Prod stage for Hello World function"
-      Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
 
     HelloWorldFunction:
       Description: "Hello World Lambda Function ARN"
