@@ -5,7 +5,6 @@ Description: >
 
     Sample SAM Template for AWS_Billing
 
-# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
     Function:
         Timeout: 3
@@ -14,17 +13,17 @@ Globals:
 Resources:
 
     HelloWorldFunction:
-        Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+        Type: AWS::Serverless::Function
         Properties:
             CodeUri: hello_world/
             Handler: app.lambda_handler
             Runtime: python3.6
-            Environment: # More info about Env Vars: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#environment-object
+            Environment:
                 Variables:
                     PARAM1: VALUE
             Events:
                 HelloWorld:
-                    Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+                    Type: Api
                     Properties:
                         Path: /hello
                         Method: get
