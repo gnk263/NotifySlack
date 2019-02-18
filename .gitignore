@@ -253,3 +253,4 @@ $RECYCLE.BIN/
 
 env.json
 
+.aws-sam/
