@@ -9,6 +9,10 @@ Globals:
     Function:
         Timeout: 3
 
+Parameters:
+  SlackWebhookUrl:
+    Type: String
+    Default: hoge
 
 Resources:
 
@@ -20,7 +24,8 @@ Resources:
             Runtime: python3.6
             Environment:
                 Variables:
-                    PARAM1: VALUE
+                    # このURLはコミット＆公開したくないため、デプロイ時にコマンドで設定する
+                    SLACK_WEBHOOK_URL: !Ref SlackWebhookUrl
             Events:
                 NotifySlack:
                     Type: Schedule
