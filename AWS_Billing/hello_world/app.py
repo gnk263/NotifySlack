@@ -1,87 +1,175 @@
+import os
+import boto3
 import json
-
 import requests
+from datetime import timedelta
+from datetime import date
+
+SLACK_WEBHOOK_URL = os.environ['SLACK_WEBHOOK_URL']
+
+# https://docs.aws.amazon.com/ja_jp/AmazonCloudWatch/latest/monitoring/viewing_metrics_with_cloudwatch.html
+# https://docs.aws.amazon.com/cli/latest/reference/cloudwatch/list-metrics.html
+# aws cloudwatch list-metrics --namespace "AWS/Billing" --region us-east-1
+# このリスト内容はユーザ毎に異なる
+BILLING_SERVICE_LIST = [
+    'AWSBudgets',
+    'AWSIoT',
+    'AmazonDynamoDB',
+    'AmazonCloudWatch',
+    'AmazonEC2',
+    'AWSLambda',
+    'AWSDataTransfer',
+    'AmazonS3',
+    'AmazonApiGateway',
+    'AWSMarketplace',
+]
 
 
 def lambda_handler(event, context):
-    """Sample pure Lambda function
+    (title, detail) = get_message()
+    post_slack(title, detail)
 
-    Parameters
-    ----------
-    event: dict, required
-        API Gateway Lambda Proxy Input Format
 
+def get_aws_billing():
+    resource = boto3.client('cloudwatch', region_name='us-east-1')
+
+    # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/cloudwatch.html#CloudWatch.Client.get_metric_data
+    # https://docs.aws.amazon.com/ja_jp/AmazonCloudWatch/latest/monitoring/aws-services-cloudwatch-metrics.html
+    # https://docs.aws.amazon.com/ja_jp/AmazonCloudWatch/latest/monitoring/monitor_estimated_charges_with_cloudwatch.html
+    response = resource.get_metric_data(
+        MetricDataQueries=get_metrics(),
+        StartTime=get_yesterday_datetime(),
+        EndTime=get_today_datetime(),
+    )
+    return formatting(response)
+
+
+def get_metrics():
+    # 合計取得
+    metrics = [
         {
-            "resource": "Resource path",
-            "path": "Path parameter",
-            "httpMethod": "Incoming request's method name"
-            "headers": {Incoming request headers}
-            "queryStringParameters": {query string parameters }
-            "pathParameters":  {path parameters}
-            "stageVariables": {Applicable stage variables}
-            "requestContext": {Request context, including authorizer-returned key-value pairs}
-            "body": "A JSON string of the request payload."
-            "isBase64Encoded": "A boolean flag to indicate if the applicable request payload is Base64-encode"
+            'Id': 'all',
+            'MetricStat': {
+                'Metric': {
+                    'Namespace': 'AWS/Billing',
+                    'MetricName': 'EstimatedCharges',
+                    'Dimensions': [
+                        {
+                            'Name': 'Currency',
+                            'Value': 'USD'
+                        }
+                    ],
+                },
+                'Period': 24 * 60 * 60,
+                'Stat': 'Maximum'
+            }
         }
+    ]
 
-        https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html#api-gateway-simple-proxy-for-lambda-input-format
+    # サービス毎に取得
+    for service_name in BILLING_SERVICE_LIST:
+        metrics.append({
+            # 先頭が大文字だと怒られるためすべて小文字にする
+            'Id': service_name.lower(),
+            'MetricStat': {
+                'Metric': {
+                    'Namespace': 'AWS/Billing',
+                    'MetricName': 'EstimatedCharges',
+                    'Dimensions': [
+                        {
+                            'Name': 'Currency',
+                            'Value': 'USD'
+                        },
+                        {
+                            'Name': 'ServiceName',
+                            'Value': service_name
+                        }
+                    ],
+                },
+                'Period': 24 * 60 * 60,
+                'Stat': 'Maximum'
+            }
+        })
 
-    context: object, required
-        Lambda Context runtime methods and attributes
+    return metrics
 
-    Attributes
-    ----------
 
-    context.aws_request_id: str
-         Lambda request ID
-    context.client_context: object
-         Additional context when invoked through AWS Mobile SDK
-    context.function_name: str
-         Lambda function name
-    context.function_version: str
-         Function version identifier
-    context.get_remaining_time_in_millis: function
-         Time in milliseconds before function times out
-    context.identity:
-         Cognito identity provider context when invoked through AWS Mobile SDK
-    context.invoked_function_arn: str
-         Function ARN
-    context.log_group_name: str
-         Cloudwatch Log group name
-    context.log_stream_name: str
-         Cloudwatch Log stream name
-    context.memory_limit_in_mb: int
-        Function memory
+def formatting(response):
+    details = []
 
-        https://docs.aws.amazon.com/lambda/latest/dg/python-context-object.html
+    for item in response['MetricDataResults']:
+        label = item['Label']
+        timestamp = item['Timestamps'][0].strftime('%Y/%m/%d')
+        billing = item['Values'][0]
 
-    Returns
-    ------
-    API Gateway Lambda Proxy Output Format: dict
-        'statusCode' and 'body' are required
-
-        {
-            "isBase64Encoded": true | false,
-            "statusCode": httpStatusCode,
-            "headers": {"headerName": "headerValue", ...},
-            "body": "..."
-        }
-
-        # api-gateway-simple-proxy-for-lambda-output-format
-        https: // docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html
-    """
-
-    try:
-        ip = requests.get("http://checkip.amazonaws.com/")
-    except requests.RequestException as e:
-        # Send some context about this error to Lambda Logs
-        print(e)
-
-        raise e
+        if label == 'EstimatedCharges':
+            total = {
+                'timestamp': timestamp,
+                'billing': billing
+            }
+        else:
+            details.append({
+                'service_name': label,
+                'billing': billing
+            })
 
     return {
-        "statusCode": 200,
-        "body": json.dumps(
-            {"message": "hello world", "location": ip.text.replace("\n", "")}
-        ),
+        'total': total,
+        'details': details
     }
+
+
+def get_message():
+    billings = get_aws_billing()
+
+    timestamp = billings['total']['timestamp']
+    total_billing = billings['total']['billing']
+
+    title = f'{timestamp}までの請求額は、{total_billing} USDです。'
+
+    details = []
+    for item in billings['details']:
+        if item['billing'] == 0.0:
+            # 請求無し（0.0 USD）の場合は、内訳を表示しない
+            continue
+        service_name = item['service_name']
+        billing = item['billing']
+        details.append(f'　・{service_name}: {billing} USD')
+
+    return title, '\n'.join(details)
+
+
+def post_slack(title, detail):
+    # https://api.slack.com/incoming-webhooks
+    # https://api.slack.com/docs/message-formatting
+    # https://api.slack.com/docs/messages/builder
+    payload = {
+        'attachments': [
+            {
+                'color': '#36a64f',
+                'pretext': title,
+                'text': detail
+            }
+        ]
+    }
+
+    # http://requests-docs-ja.readthedocs.io/en/latest/user/quickstart/
+    try:
+        response = requests.post(SLACK_WEBHOOK_URL, data=json.dumps(payload))
+    except requests.exceptions.RequestException as e:
+        print(e)
+    else:
+        print(response.status_code)
+
+
+def get_yesterday_datetime():
+    today = date.today()
+    yesterday = today - timedelta(days=1)
+
+    # ISO 8601
+    return yesterday.isoformat()
+
+
+def get_today_datetime():
+    # ISO 8601
+    return date.today().isoformat()
