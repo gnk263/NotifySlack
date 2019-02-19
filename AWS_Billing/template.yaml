@@ -1,7 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: >
-  AWS請求額を毎日Slackに通知する
+Description: Notify Slack every day of AWS billing
 
 Globals:
   Function:
