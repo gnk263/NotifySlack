@@ -1,9 +1,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
-    AWS_Billing
-
-    Sample SAM Template for AWS_Billing
+  AWS請求額を毎日Slackに通知する
 
 Globals:
     Function:
