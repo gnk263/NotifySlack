@@ -2,139 +2,88 @@ import os
 import boto3
 import json
 import requests
-from datetime import timedelta
+from datetime import datetime
 from datetime import date
 
 SLACK_WEBHOOK_URL = os.environ['SLACK_WEBHOOK_URL']
 
-# https://docs.aws.amazon.com/ja_jp/AmazonCloudWatch/latest/monitoring/viewing_metrics_with_cloudwatch.html
-# https://docs.aws.amazon.com/cli/latest/reference/cloudwatch/list-metrics.html
-# aws cloudwatch list-metrics --namespace "AWS/Billing" --region us-east-1
-# このリスト内容はユーザ毎に異なる
-BILLING_SERVICE_LIST = [
-    'AWSBudgets',
-    'AWSIoT',
-    'AmazonDynamoDB',
-    'AmazonCloudWatch',
-    'AmazonEC2',
-    'AWSLambda',
-    'AWSDataTransfer',
-    'AmazonS3',
-    'AmazonApiGateway',
-    'AWSMarketplace',
-]
-
 
 def lambda_handler(event, context):
-    (title, detail) = get_message()
+    client = boto3.client('ce', region_name='us-east-1')
+
+    # 合計とサービス毎の請求額を取得する
+    total_billing = get_total_billing(client)
+    service_billings = get_service_billings(client)
+
+    # Slack用のメッセージを作成して投げる
+    (title, detail) = get_message(total_billing, service_billings)
     post_slack(title, detail)
 
 
-def get_aws_billing():
-    resource = boto3.client('cloudwatch', region_name='us-east-1')
-
-    # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/cloudwatch.html#CloudWatch.Client.get_metric_data
-    # https://docs.aws.amazon.com/ja_jp/AmazonCloudWatch/latest/monitoring/aws-services-cloudwatch-metrics.html
-    # https://docs.aws.amazon.com/ja_jp/AmazonCloudWatch/latest/monitoring/monitor_estimated_charges_with_cloudwatch.html
-    response = resource.get_metric_data(
-        MetricDataQueries=get_metrics(),
-        StartTime=get_yesterday_datetime(),
-        EndTime=get_today_datetime(),
+def get_total_billing(client):
+    # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ce.html#CostExplorer.Client.get_cost_and_usage
+    response = client.get_cost_and_usage(
+        TimePeriod={
+            'Start': get_begin_of_month(),
+            'End': get_today()
+        },
+        Granularity='MONTHLY',
+        Metrics=[
+            'AmortizedCost'
+        ]
     )
-    return formatting(response)
-
-
-def get_metrics():
-    # 合計取得
-    metrics = [
-        {
-            'Id': 'all',
-            'MetricStat': {
-                'Metric': {
-                    'Namespace': 'AWS/Billing',
-                    'MetricName': 'EstimatedCharges',
-                    'Dimensions': [
-                        {
-                            'Name': 'Currency',
-                            'Value': 'USD'
-                        }
-                    ],
-                },
-                'Period': 24 * 60 * 60,
-                'Stat': 'Maximum'
-            }
-        }
-    ]
-
-    # サービス毎に取得
-    for service_name in BILLING_SERVICE_LIST:
-        metrics.append({
-            # 先頭が大文字だと怒られるためすべて小文字にする
-            'Id': service_name.lower(),
-            'MetricStat': {
-                'Metric': {
-                    'Namespace': 'AWS/Billing',
-                    'MetricName': 'EstimatedCharges',
-                    'Dimensions': [
-                        {
-                            'Name': 'Currency',
-                            'Value': 'USD'
-                        },
-                        {
-                            'Name': 'ServiceName',
-                            'Value': service_name
-                        }
-                    ],
-                },
-                'Period': 24 * 60 * 60,
-                'Stat': 'Maximum'
-            }
-        })
-
-    return metrics
-
-
-def formatting(response):
-    details = []
-
-    for item in response['MetricDataResults']:
-        label = item['Label']
-        timestamp = item['Timestamps'][0].strftime('%Y/%m/%d')
-        billing = item['Values'][0]
-
-        if label == 'EstimatedCharges':
-            total = {
-                'timestamp': timestamp,
-                'billing': billing
-            }
-        else:
-            details.append({
-                'service_name': label,
-                'billing': billing
-            })
-
     return {
-        'total': total,
-        'details': details
+        'start': response['ResultsByTime'][0]['TimePeriod']['Start'],
+        'end': response['ResultsByTime'][0]['TimePeriod']['End'],
+        'billing': response['ResultsByTime'][0]['Total']['AmortizedCost']['Amount'],
     }
 
 
-def get_message():
-    billings = get_aws_billing()
+def get_service_billings(client):
+    # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ce.html#CostExplorer.Client.get_cost_and_usage
+    response = client.get_cost_and_usage(
+        TimePeriod={
+            'Start': get_begin_of_month(),
+            'End': get_today()
+        },
+        Granularity='MONTHLY',
+        Metrics=[
+            'AmortizedCost'
+        ],
+        GroupBy=[
+            {
+                'Type': 'DIMENSION',
+                'Key': 'SERVICE'
+            }
+        ]
+    )
 
-    timestamp = billings['total']['timestamp']
-    total_billing = billings['total']['billing']
+    billings = []
 
-    title = f'{timestamp}までの請求額は、{total_billing} USDです。'
+    for item in response['ResultsByTime'][0]['Groups']:
+        billings.append({
+            'service_name': item['Keys'][0],
+            'billing': item['Metrics']['AmortizedCost']['Amount']
+        })
+    return billings
+
+
+def get_message(total_billing, service_billings):
+    start = datetime.strptime(total_billing['start'], '%Y-%m-%d').strftime('%m/%d')
+    end = datetime.strptime(total_billing['end'], '%Y-%m-%d').strftime('%m/%d')
+    total = round(float(total_billing['billing']), 2)
+
+    title = f'{start}～{end}の請求額は、{total:.2f} USDです。'
 
     details = []
-    for item in billings['details']:
-        if item['billing'] == 0.0:
+    for item in service_billings:
+        service_name = item['service_name']
+        billing = round(float(item['billing']), 2)
+
+        if billing == 0.0:
             # 請求無し（0.0 USD）の場合は、内訳を表示しない
             continue
-        service_name = item['service_name']
-        billing = item['billing']
-        details.append(f'　・{service_name}: {billing} USD')
+        details.append(f'　・{service_name}: {billing:.2f} USD')
 
     return title, '\n'.join(details)
 
@@ -162,14 +111,13 @@ def post_slack(title, detail):
         print(response.status_code)
 
 
-def get_yesterday_datetime():
+def get_begin_of_month():
     today = date.today()
-    yesterday = today - timedelta(days=1)
 
     # ISO 8601
-    return yesterday.isoformat()
+    return date(today.year, today.month, 1).isoformat()
 
 
-def get_today_datetime():
+def get_today():
     # ISO 8601
     return date.today().isoformat()
