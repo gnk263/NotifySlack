@@ -50,10 +50,14 @@ def get_notify_delays():
 
 def get_current_delays():
     try:
-        return json.loads(requests.get(JSON_ADDR))
+        res = requests.get(JSON_ADDR)
     except requests.RequestException as e:
         print(e)
         raise e
+
+    if res.status_code == 200:
+        return json.loads(res.text)
+    return []
 
 
 def get_message(delays):
