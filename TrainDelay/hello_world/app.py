@@ -2,8 +2,8 @@ import os
 import json
 import requests
 
-JSON_ADDR = 'https://rti-giken.jp/fhc/api/train_tetsudo/delay.json'
 
+# ここを任意に変更してください。
 CHECK_LIST = [
     {
         'name': '中央･総武各駅停車',
@@ -16,6 +16,8 @@ CHECK_LIST = [
         'website': 'https://www.tokyometro.jp/unkou/history/touzai.html'
     },
 ]
+
+JSON_ADDR = 'https://rti-giken.jp/fhc/api/train_tetsudo/delay.json'
 
 SLACK_WEBHOOK_URL = os.environ['SLACK_WEBHOOK_URL']
 
