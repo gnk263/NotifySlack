@@ -25,6 +25,7 @@ def lambda_handler(event, context):
     notify_delays = get_notify_delays()
 
     if not notify_delays:
+        # 遅延が無ければ通知しない
         return
 
     # Slack用のメッセージを作成して投げる
