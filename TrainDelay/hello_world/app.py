@@ -32,9 +32,6 @@ def lambda_handler(event, context):
     (title, detail) = get_message(notify_delays)
     post_slack(title, detail)
 
-    print(title)
-    print(detail)
-
     return
 
 
