@@ -1,87 +1,70 @@
 import json
-
 import requests
+
+JSON_ADDR = 'https://rti-giken.jp/fhc/api/train_tetsudo/delay.json'
+
+CHECK_LIST = [
+    {
+        'name': '中央･総武各駅停車',
+        'company': 'JR東日本',
+        'website': 'https://traininfo.jreast.co.jp/train_info/kanto.aspx'
+    },
+    {
+        'name': '東西線',
+        'company': '東京メトロ',
+        'website': 'https://www.tokyometro.jp/unkou/history/touzai.html'
+    },
+]
 
 
 def lambda_handler(event, context):
-    """Sample pure Lambda function
 
-    Parameters
-    ----------
-    event: dict, required
-        API Gateway Lambda Proxy Input Format
+    notify_delays = get_notify_delays()
 
-        {
-            "resource": "Resource path",
-            "path": "Path parameter",
-            "httpMethod": "Incoming request's method name"
-            "headers": {Incoming request headers}
-            "queryStringParameters": {query string parameters }
-            "pathParameters":  {path parameters}
-            "stageVariables": {Applicable stage variables}
-            "requestContext": {Request context, including authorizer-returned key-value pairs}
-            "body": "A JSON string of the request payload."
-            "isBase64Encoded": "A boolean flag to indicate if the applicable request payload is Base64-encode"
-        }
+    # Slack用のメッセージを作成して投げる
+    (title, detail) = get_message(notify_delays)
+    #post_slack(title, detail)
 
-        https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html#api-gateway-simple-proxy-for-lambda-input-format
-
-    context: object, required
-        Lambda Context runtime methods and attributes
-
-    Attributes
-    ----------
-
-    context.aws_request_id: str
-         Lambda request ID
-    context.client_context: object
-         Additional context when invoked through AWS Mobile SDK
-    context.function_name: str
-         Lambda function name
-    context.function_version: str
-         Function version identifier
-    context.get_remaining_time_in_millis: function
-         Time in milliseconds before function times out
-    context.identity:
-         Cognito identity provider context when invoked through AWS Mobile SDK
-    context.invoked_function_arn: str
-         Function ARN
-    context.log_group_name: str
-         Cloudwatch Log group name
-    context.log_stream_name: str
-         Cloudwatch Log stream name
-    context.memory_limit_in_mb: int
-        Function memory
-
-        https://docs.aws.amazon.com/lambda/latest/dg/python-context-object.html
-
-    Returns
-    ------
-    API Gateway Lambda Proxy Output Format: dict
-        'statusCode' and 'body' are required
-
-        {
-            "isBase64Encoded": true | false,
-            "statusCode": httpStatusCode,
-            "headers": {"headerName": "headerValue", ...},
-            "body": "..."
-        }
-
-        # api-gateway-simple-proxy-for-lambda-output-format
-        https: // docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html
-    """
-
-    try:
-        ip = requests.get("http://checkip.amazonaws.com/")
-    except requests.RequestException as e:
-        # Send some context about this error to Lambda Logs
-        print(e)
-
-        raise e
+    print(title)
+    print(detail)
 
     return {
-        "statusCode": 200,
-        "body": json.dumps(
-            {"message": "hello world", "location": ip.text.replace("\n", "")}
-        ),
+        'statusCode': 200,
+        'body': json.dumps('Hello from Lambda!')
     }
+
+
+def get_notify_delays():
+
+    current_delays = get_current_delays()
+
+    notify_delays = []
+
+    for delay_item in current_delays:
+        for check_item in CHECK_LIST:
+            if delay_item['name'] == check_item['name'] and delay_item['company'] == check_item['company']:
+                notify_delays.append(check_item)
+
+    return notify_delays
+
+
+def get_current_delays():
+    try:
+        return json.loads(requests.get(JSON_ADDR))
+    except requests.RequestException as e:
+        print(e)
+        raise e
+
+
+def get_message(delays):
+    title = "電車の遅延があります。"
+
+    details = []
+
+    for item in delays:
+        company = item['company']
+        name = item['name']
+        website = item['website']
+        details.append(f'・{company}： {name}： <{website}|こちら>')
+
+    return title, '\n'.join(details)
