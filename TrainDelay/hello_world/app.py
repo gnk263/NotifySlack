@@ -22,10 +22,7 @@ def lambda_handler(event, context):
     notify_delays = get_notify_delays()
 
     if not notify_delays:
-        return {
-            'statusCode': 200,
-            'body': json.dumps('Hello from Lambda!')
-        }
+        return
 
     # Slack用のメッセージを作成して投げる
     (title, detail) = get_message(notify_delays)
@@ -34,10 +31,7 @@ def lambda_handler(event, context):
     print(title)
     print(detail)
 
-    return {
-        'statusCode': 200,
-        'body': json.dumps('Hello from Lambda!')
-    }
+    return
 
 
 def get_notify_delays():
