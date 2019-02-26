@@ -1,3 +1,4 @@
+import os
 import json
 import requests
 
@@ -16,6 +17,8 @@ CHECK_LIST = [
     },
 ]
 
+SLACK_WEBHOOK_URL = os.environ['SLACK_WEBHOOK_URL']
+
 
 def lambda_handler(event, context):
 
@@ -26,7 +29,7 @@ def lambda_handler(event, context):
 
     # Slack用のメッセージを作成して投げる
     (title, detail) = get_message(notify_delays)
-    #post_slack(title, detail)
+    post_slack(title, detail)
 
     print(title)
     print(detail)
@@ -72,3 +75,26 @@ def get_message(delays):
         details.append(f'・{company}： {name}： <{website}|こちら>')
 
     return title, '\n'.join(details)
+
+
+def post_slack(title, detail):
+    # https://api.slack.com/incoming-webhooks
+    # https://api.slack.com/docs/message-formatting
+    # https://api.slack.com/docs/messages/builder
+    payload = {
+        'attachments': [
+            {
+                'color': '#36a64f',
+                'pretext': title,
+                'text': detail
+            }
+        ]
+    }
+
+    # http://requests-docs-ja.readthedocs.io/en/latest/user/quickstart/
+    try:
+        response = requests.post(SLACK_WEBHOOK_URL, data=json.dumps(payload))
+    except requests.exceptions.RequestException as e:
+        print(e)
+    else:
+        print(response.status_code)
