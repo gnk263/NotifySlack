@@ -1,0 +1,40 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Notify Slack Train Delay
+
+Globals:
+  Function:
+    Timeout: 10
+
+Parameters:
+  SlackWebhookUrl:
+    Type: String
+    Default: hoge
+
+Resources:
+
+  HelloWorldFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: hello_world/
+      Handler: app.lambda_handler
+      Runtime: python3.6
+      Environment:
+        Variables:
+          # このURLはコミット＆公開したくないため、デプロイ時にコマンドで設定する
+          SLACK_WEBHOOK_URL: !Ref SlackWebhookUrl
+      Events:
+        NotifySlack:
+          Type: Schedule
+          Properties:
+            Schedule: cron(0 23 * * ? *) # 日本時間AM8時に毎日通知する
+
+Outputs:
+
+  HelloWorldFunction:
+    Description: "Hello World Lambda Function ARN"
+    Value: !GetAtt HelloWorldFunction.Arn
+
+  HelloWorldFunctionIamRole:
+    Description: "Implicit IAM Role created for Hello World function"
+    Value: !GetAtt HelloWorldFunctionRole.Arn
