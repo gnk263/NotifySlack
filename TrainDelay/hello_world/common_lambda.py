@@ -62,6 +62,9 @@ def get_message(delays) -> tuple:
         str: メッセージのタイトル
         str: メッセージの詳細（遅延情報）
     """
+    if not delays:
+        return "電車の遅延はありません。", ""
+
     title = "電車の遅延があります。"
 
     details = []
