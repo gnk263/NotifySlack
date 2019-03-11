@@ -28,13 +28,22 @@ Resources:
           Type: Schedule
           Properties:
             Schedule: cron(0 23 * * ? *) # 日本時間AM8時に毎日通知する
+  NotifySlashCommandFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: hello_world/
+      Handler: slash_command.lambda_handler
+      Runtime: python3.6
+      Events:
+        SlashCommand:
+          Type: Api
+          Properties:
+            Path: /train/notification
+            Method: POST
+
 
 Outputs:
 
-  NotifyPeriodicFunction:
-    Description: "Notify Periodic Function ARN"
-    Value: !GetAtt NotifyPeriodicFunction.Arn
-
-  NotifyPeriodicFunctionIamRole:
-    Description: "Implicit IAM Role created for Notify Periodic Function"
-    Value: !GetAtt NotifyPeriodicFunction.Arn
+  SlashCommandApi:
+    Description: "Slash command API"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/train/notification"
