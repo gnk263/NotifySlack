@@ -13,7 +13,7 @@ Parameters:
 
 Resources:
 
-  HelloWorldFunction:
+  NotifyPeriodicFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: hello_world/
@@ -31,10 +31,10 @@ Resources:
 
 Outputs:
 
-  HelloWorldFunction:
-    Description: "Hello World Lambda Function ARN"
-    Value: !GetAtt HelloWorldFunction.Arn
+  NotifyPeriodicFunction:
+    Description: "Notify Periodic Function ARN"
+    Value: !GetAtt NotifyPeriodicFunction.Arn
 
-  HelloWorldFunctionIamRole:
-    Description: "Implicit IAM Role created for Hello World function"
-    Value: !GetAtt HelloWorldFunctionRole.Arn
+  NotifyPeriodicFunctionIamRole:
+    Description: "Implicit IAM Role created for Notify Periodic Function"
+    Value: !GetAtt NotifyPeriodicFunction.Arn
