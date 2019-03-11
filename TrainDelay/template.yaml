@@ -10,9 +10,6 @@ Parameters:
   SlackWebhookUrl:
     Type: String
     Default: hoge
-  SlackEphemeralUrl:
-    Type: String
-    Default: hoge
 
 Resources:
 
@@ -37,10 +34,6 @@ Resources:
       CodeUri: hello_world/
       Handler: slash_command.lambda_handler
       Runtime: python3.6
-      Environment:
-        Variables:
-          # このURLはコミット＆公開したくないため、デプロイ時にコマンドで設定する
-          SLACK_EPHEMERAL_URL: !Ref SlackEphemeralUrl
       Events:
         SlashCommand:
           Type: Api

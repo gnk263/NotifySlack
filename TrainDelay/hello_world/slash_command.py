@@ -4,7 +4,8 @@ import requests
 
 from common_lambda import get_notify_delays, get_message
 
-SLACK_EPHEMERAL_URL = os.environ['SLACK_EPHEMERAL_URL']
+# https://api.slack.com/methods/chat.postEphemeral
+SLACK_EPHEMERAL_URL = "https://slack.com/api/chat.postEphemeral"
 
 
 def lambda_handler(event, context) -> None:
