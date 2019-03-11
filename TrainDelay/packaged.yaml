@@ -1,0 +1,43 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Notify Slack Train Delay
+Globals:
+  Function:
+    Timeout: 10
+Outputs:
+  SlashCommandApi:
+    Description: Slash command API
+    Value:
+      Fn::Sub: https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/train/notification
+Parameters:
+  SlackWebhookUrl:
+    Default: hoge
+    Type: String
+Resources:
+  NotifyPeriodicFunction:
+    Properties:
+      CodeUri: s3://gnk263-lambda-bucket/f6fa439bf04a77d3dedeecad04ba4ed3
+      Environment:
+        Variables:
+          SLACK_WEBHOOK_URL:
+            Ref: SlackWebhookUrl
+      Events:
+        NotifySlack:
+          Properties:
+            Schedule: cron(0 23 * * ? *)
+          Type: Schedule
+      Handler: periodic.lambda_handler
+      Runtime: python3.6
+    Type: AWS::Serverless::Function
+  NotifySlashCommandFunction:
+    Properties:
+      CodeUri: s3://gnk263-lambda-bucket/ebaa0ba18f5c03d94e939c67fc6729d8
+      Events:
+        SlashCommand:
+          Properties:
+            Method: POST
+            Path: /train/notification
+          Type: Api
+      Handler: slash_command.lambda_handler
+      Runtime: python3.6
+    Type: AWS::Serverless::Function
+Transform: AWS::Serverless-2016-10-31

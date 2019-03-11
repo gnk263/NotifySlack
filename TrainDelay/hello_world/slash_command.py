@@ -2,6 +2,7 @@ import os
 import json
 import requests
 
+from urllib.parse import unquote
 from common_lambda import get_notify_delays, get_message
 
 # https://api.slack.com/methods/chat.postEphemeral
@@ -9,32 +10,26 @@ SLACK_EPHEMERAL_URL = "https://slack.com/api/chat.postEphemeral"
 
 
 def lambda_handler(event, context) -> dict:
+    # 受信したパラメータを解析する
+    request_param = parse_slash_commands(event['body'])
+    print(json.dumps(request_param))
+
+    if request_param['command'] != '/train':
+        # 想定コマンドと異なるため何もしない
+        return {
+            "statusCode": 200,
+        }
 
     notify_delays = get_notify_delays()
 
-    # Slack用のメッセージを作成して投げる
+    # Slack用のメッセージを作成して返却する
     (title, detail) = get_message(notify_delays)
-    post_slack(title, detail)
 
-    return {
-        "statusCode": 200,
-    }
-
-
-def post_slack(title, detail) -> None:
-    """SlackにPostする
-
-    Args:
-        title: メッセージのタイトル
-        detail: メッセージの詳細（遅延情報）
-
-    Returns:
-
-    """
     # https://api.slack.com/incoming-webhooks
     # https://api.slack.com/docs/message-formatting
     # https://api.slack.com/docs/messages/builder
     payload = {
+        'response_type': 'ephemeral',    # コマンドを起動したユーザのみに返答する
         'attachments': [
             {
                 'color': '#36a64f',
@@ -44,10 +39,16 @@ def post_slack(title, detail) -> None:
         ]
     }
 
-    # http://requests-docs-ja.readthedocs.io/en/latest/user/quickstart/
-    try:
-        response = requests.post(SLACK_EPHEMERAL_URL, data=json.dumps(payload))
-    except requests.exceptions.RequestException as e:
-        print(e)
-    else:
-        print(response.status_code)
+    return {
+        "statusCode": 200,
+        "body": json.dumps(payload)
+    }
+
+
+def parse_slash_commands(payload):
+    params = {}
+    key_value_list = unquote(payload).split("&")
+    for item in key_value_list:
+        (key, value) = item.split("=")
+        params[key] = value
+    return params
