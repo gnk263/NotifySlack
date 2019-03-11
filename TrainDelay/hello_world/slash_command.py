@@ -23,6 +23,7 @@ def lambda_handler(event, context) -> dict:
     # https://api.slack.com/incoming-webhooks
     # https://api.slack.com/docs/message-formatting
     # https://api.slack.com/docs/messages/builder
+    # https://api.slack.com/slash-commands
     payload = {
         'response_type': 'ephemeral',    # コマンドを起動したユーザのみに返答する
         'attachments': [
@@ -40,7 +41,15 @@ def lambda_handler(event, context) -> dict:
     }
 
 
-def parse_slash_commands(payload):
+def parse_slash_commands(payload) -> dict:
+    """Slash commandsのパラメータを解析する
+
+    Args:
+        payload: 受信したSlash commandsのパラメータ
+
+    Returns:
+        dict: 解析したパラメータとその内容
+    """
     params = {}
     key_value_list = unquote(payload).split("&")
     for item in key_value_list:
