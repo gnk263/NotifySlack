@@ -46,4 +46,4 @@ Outputs:
 
   SlashCommandApi:
     Description: "Slash command API"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/prod/slash_command/notify"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/slash_command/notify"
