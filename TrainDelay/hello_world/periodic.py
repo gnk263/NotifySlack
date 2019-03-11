@@ -8,7 +8,7 @@ JSON_ADDR = 'https://rti-giken.jp/fhc/api/train_tetsudo/delay.json'
 SLACK_WEBHOOK_URL = os.environ['SLACK_WEBHOOK_URL']
 
 
-def lambda_handler(event, context):
+def lambda_handler(event, context) -> None:
 
     notify_delays = get_notify_delays()
 
@@ -23,7 +23,7 @@ def lambda_handler(event, context):
     return
 
 
-def get_notify_delays():
+def get_notify_delays() -> list:
     """通知すべき遅延情報を取得する
 
     Returns:
@@ -44,7 +44,7 @@ def get_notify_delays():
     return notify_delays
 
 
-def get_target_list():
+def get_target_list() -> list:
     """判定対象の路線情報を取得する
 
     Returns:
@@ -54,7 +54,7 @@ def get_target_list():
         return json.load(f)
 
 
-def get_current_delays():
+def get_current_delays() -> list:
     """
     現在の遅延情報を外部サイトから取得する
     Returns:
@@ -71,7 +71,7 @@ def get_current_delays():
     return []
 
 
-def get_message(delays):
+def get_message(delays) -> tuple:
     """Slackに通知するメッセージを作成する
 
     Args:
@@ -94,7 +94,7 @@ def get_message(delays):
     return title, '\n'.join(details)
 
 
-def post_slack(title, detail):
+def post_slack(title, detail) -> None:
     """SlackにPostする
 
     Args:
