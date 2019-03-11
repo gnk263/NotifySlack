@@ -38,7 +38,7 @@ Resources:
         SlashCommand:
           Type: Api
           Properties:
-            Path: /slash_command/notify
+            Path: /train/notification
             Method: POST
 
 
@@ -46,4 +46,4 @@ Outputs:
 
   SlashCommandApi:
     Description: "Slash command API"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/slash_command/notify"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/train/notification"
