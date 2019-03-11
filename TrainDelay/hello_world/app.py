@@ -3,20 +3,6 @@ import json
 import requests
 
 
-# ここを任意に変更してください。
-CHECK_LIST = [
-    {
-        'name': '中央･総武各駅停車',
-        'company': 'JR東日本',
-        'website': 'https://traininfo.jreast.co.jp/train_info/kanto.aspx'
-    },
-    {
-        'name': '東西線',
-        'company': '東京メトロ',
-        'website': 'https://www.tokyometro.jp/unkou/history/touzai.html'
-    },
-]
-
 JSON_ADDR = 'https://rti-giken.jp/fhc/api/train_tetsudo/delay.json'
 
 SLACK_WEBHOOK_URL = os.environ['SLACK_WEBHOOK_URL']
@@ -41,14 +27,21 @@ def get_notify_delays():
 
     current_delays = get_current_delays()
 
+    target_list = get_target_list()
+
     notify_delays = []
 
     for delay_item in current_delays:
-        for check_item in CHECK_LIST:
+        for check_item in target_list:
             if delay_item['name'] == check_item['name'] and delay_item['company'] == check_item['company']:
                 notify_delays.append(check_item)
 
     return notify_delays
+
+
+def get_target_list():
+    with open('target.json') as f:
+        return json.load(f)
 
 
 def get_current_delays():
