@@ -1,12 +1,7 @@
-import os
 import json
-import requests
 
 from urllib.parse import unquote
 from common_lambda import get_notify_delays, get_message
-
-# https://api.slack.com/methods/chat.postEphemeral
-SLACK_EPHEMERAL_URL = "https://slack.com/api/chat.postEphemeral"
 
 
 def lambda_handler(event, context) -> dict:
