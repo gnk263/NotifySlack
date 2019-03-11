@@ -8,7 +8,7 @@ from common_lambda import get_notify_delays, get_message
 SLACK_EPHEMERAL_URL = "https://slack.com/api/chat.postEphemeral"
 
 
-def lambda_handler(event, context) -> None:
+def lambda_handler(event, context) -> dict:
 
     notify_delays = get_notify_delays()
 
@@ -16,7 +16,9 @@ def lambda_handler(event, context) -> None:
     (title, detail) = get_message(notify_delays)
     post_slack(title, detail)
 
-    return
+    return {
+        "statusCode": 200,
+    }
 
 
 def post_slack(title, detail) -> None:
