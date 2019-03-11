@@ -24,6 +24,11 @@ def lambda_handler(event, context):
 
 
 def get_notify_delays():
+    """通知すべき遅延情報を取得する
+
+    Returns:
+        list: 通知すべき遅延情報
+    """
 
     current_delays = get_current_delays()
 
@@ -40,11 +45,21 @@ def get_notify_delays():
 
 
 def get_target_list():
+    """判定対象の路線情報を取得する
+
+    Returns:
+        list: 判定対象の路線情報
+    """
     with open('target.json') as f:
         return json.load(f)
 
 
 def get_current_delays():
+    """
+    現在の遅延情報を外部サイトから取得する
+    Returns:
+        list: 現在の遅延情報
+    """
     try:
         res = requests.get(JSON_ADDR)
     except requests.RequestException as e:
@@ -57,6 +72,15 @@ def get_current_delays():
 
 
 def get_message(delays):
+    """Slackに通知するメッセージを作成する
+
+    Args:
+        delays: 通知すべき遅延情報
+
+    Returns:
+        str: メッセージのタイトル
+        str: メッセージの詳細（遅延情報）
+    """
     title = "電車の遅延があります。"
 
     details = []
@@ -71,6 +95,15 @@ def get_message(delays):
 
 
 def post_slack(title, detail):
+    """SlackにPostする
+
+    Args:
+        title: メッセージのタイトル
+        detail: メッセージの詳細（遅延情報）
+
+    Returns:
+
+    """
     # https://api.slack.com/incoming-webhooks
     # https://api.slack.com/docs/message-formatting
     # https://api.slack.com/docs/messages/builder
