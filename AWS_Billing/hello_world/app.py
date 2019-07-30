@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, date
 SLACK_WEBHOOK_URL = os.environ['SLACK_WEBHOOK_URL']
 
 
-def lambda_handler(event, context):
+def lambda_handler(event, context) -> None:
     client = boto3.client('ce', region_name='us-east-1')
 
     # 合計とサービス毎の請求額を取得する
@@ -20,7 +20,7 @@ def lambda_handler(event, context):
     post_slack(title, detail)
 
 
-def get_total_billing(client):
+def get_total_billing(client) -> dict:
     (start_date, end_date) = get_total_cost_date_range()
 
     # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ce.html#CostExplorer.Client.get_cost_and_usage
@@ -41,7 +41,7 @@ def get_total_billing(client):
     }
 
 
-def get_service_billings(client):
+def get_service_billings(client) -> list:
     (start_date, end_date) = get_total_cost_date_range()
 
     # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ce.html#CostExplorer.Client.get_cost_and_usage
@@ -72,7 +72,7 @@ def get_service_billings(client):
     return billings
 
 
-def get_message(total_billing, service_billings):
+def get_message(total_billing: dict, service_billings: list) -> (str, str):
     start = datetime.strptime(total_billing['start'], '%Y-%m-%d').strftime('%m/%d')
     end = datetime.strptime(total_billing['end'], '%Y-%m-%d').strftime('%m/%d')
     total = round(float(total_billing['billing']), 2)
@@ -92,7 +92,7 @@ def get_message(total_billing, service_billings):
     return title, '\n'.join(details)
 
 
-def post_slack(title, detail):
+def post_slack(title: str, detail: str) -> None:
     # https://api.slack.com/incoming-webhooks
     # https://api.slack.com/docs/message-formatting
     # https://api.slack.com/docs/messages/builder
