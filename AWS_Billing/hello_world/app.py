@@ -2,8 +2,8 @@ import os
 import boto3
 import json
 import requests
-from datetime import datetime
-from datetime import date
+from datetime import datetime, timedelta, date
+
 
 SLACK_WEBHOOK_URL = os.environ['SLACK_WEBHOOK_URL']
 
@@ -21,11 +21,13 @@ def lambda_handler(event, context):
 
 
 def get_total_billing(client):
+    (start_date, end_date) = get_total_cost_date_range()
+
     # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ce.html#CostExplorer.Client.get_cost_and_usage
     response = client.get_cost_and_usage(
         TimePeriod={
-            'Start': get_begin_of_month(),
-            'End': get_today()
+            'Start': start_date,
+            'End': end_date
         },
         Granularity='MONTHLY',
         Metrics=[
@@ -40,11 +42,13 @@ def get_total_billing(client):
 
 
 def get_service_billings(client):
+    (start_date, end_date) = get_total_cost_date_range()
+
     # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ce.html#CostExplorer.Client.get_cost_and_usage
     response = client.get_cost_and_usage(
         TimePeriod={
-            'Start': get_begin_of_month(),
-            'End': get_today()
+            'Start': start_date,
+            'End': end_date
         },
         Granularity='MONTHLY',
         Metrics=[
@@ -111,13 +115,26 @@ def post_slack(title, detail):
         print(response.status_code)
 
 
-def get_begin_of_month():
-    today = date.today()
+def get_total_cost_date_range() -> (str, str):
+    start_date = get_begin_of_month()
+    end_date = get_today()
 
-    # ISO 8601
-    return date(today.year, today.month, 1).isoformat()
+    # get_cost_and_usage()のstartとendに同じ日付は指定不可のため、
+    # 「今日が1日」なら、「先月1日から今月1日（今日）」までの範囲にする
+    if start_date == end_date:
+        end_of_month = datetime.strptime(start_date, '%Y-%m-%d') + timedelta(days=-1)
+        begin_of_month = end_of_month.replace(day=1)
+        return begin_of_month.date().isoformat(), end_date
+    return start_date, end_date
 
 
-def get_today():
-    # ISO 8601
+def get_begin_of_month() -> str:
+    return date.today().replace(day=1).isoformat()
+
+
+def get_prev_day(prev: int) -> str:
+    return (date.today() - timedelta(days=prev)).isoformat()
+
+
+def get_today() -> str:
     return date.today().isoformat()
