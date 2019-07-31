@@ -74,10 +74,14 @@ def get_service_billings(client) -> list:
 
 def get_message(total_billing: dict, service_billings: list) -> (str, str):
     start = datetime.strptime(total_billing['start'], '%Y-%m-%d').strftime('%m/%d')
-    end = datetime.strptime(total_billing['end'], '%Y-%m-%d').strftime('%m/%d')
+
+    # Endの日付は結果に含まないため、表示上は前日にしておく
+    end_today = datetime.strptime(total_billing['end'], '%Y-%m-%d')
+    end_yesterday = (end_today - timedelta(days=1)).strftime('%m/%d')
+
     total = round(float(total_billing['billing']), 2)
 
-    title = f'{start}～{end}の請求額は、{total:.2f} USDです。'
+    title = f'{start}～{end_yesterday}の請求額は、{total:.2f} USDです。'
 
     details = []
     for item in service_billings:
